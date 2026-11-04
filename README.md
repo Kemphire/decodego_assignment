@@ -1,3 +1,22 @@
+# Decisions
+
+### I decided not to use ORM
+
+Although i like drizzle, stil i decided to raw dog sql queries, the scope of this project was managable enough and pure raw sql queries doesn't come hidden quirks like you may experience with ORMs.
+
+and also cloudflares D1Database.bind automatically santifizes variables for SQL Injection attacks, and allows for typesafe results via templates
+
+So i didn't saw any real benifit using it
+
+### Idempotency is managed by the share itself
+
+I decided to store the idempotency key for a payment (paymentKey) with the share itself, since we only have one entity share which needed to support idempotent behaviour there was no real benifit for going towards a more scalable cache style method
+
+### The web ui is inspired by your company's [website](https://docodego.com/).
+
+I like neobrutualism, it also suited for this assignment, so i though why not use my free will of style and use it here :)
+
+
 # SDE Intern Assignment: Shared Bill Splitter
 
 Welcome. In this assignment you build a small bill splitter for a shared home. It has two parts:

@@ -1,5 +1,5 @@
 {
-  description = "OpenPrism: Agentic Research Operating System";
+  description = "Nix flake pnpm and node";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
