@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter Variable", Inter, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", "JetBrains Mono", monospace;
+
+  --color-do: #ffb800;
+  --color-co: #3b82f6;
+  --color-de: #f43f5e;
+  --color-go: #10b981;
+  --color-ink: #000000;
+  --color-paper: #ffffff;
+  --color-canvas: #fafafa;
+
+  --shadow-brutal: 6px 6px 0 0 #000000;
+  --shadow-brutal-sm: 3px 3px 0 0 #000000;
+}
+
+@layer base {
+  body {
+    min-width: 320px;
+    background: var(--color-canvas);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection {
+    background: var(--color-do);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 3px solid var(--color-co);
+    outline-offset: 4px;
+  }
+
+  button:not(:disabled),
+  select:not(:disabled) {
+    cursor: pointer;
+  }
+
+  h2,
+  h3 {
+    overflow-wrap: anywhere;
+  }
+}
+
+@layer components {
+  .button {
+    @apply inline-flex min-h-11 shrink-0 items-center justify-center gap-2 border-2 border-ink px-5 py-3 text-xs font-black uppercase tracking-wider shadow-brutal-sm;
+    transition:
+      translate 120ms ease,
+      box-shadow 120ms ease,
+      background-color 120ms ease;
+  }
+
+  .button:not(:disabled):hover {
+    translate: 3px 3px;
+    box-shadow: none;
+  }
+
+  .button:disabled {
+    @apply cursor-not-allowed bg-neutral-100 text-neutral-500 shadow-none;
+  }
+
+  .eyebrow {
+    @apply font-mono text-[10px] font-semibold uppercase tracking-[0.16em];
+  }
+
+  .state-panel {
+    @apply border-2 border-ink bg-paper p-6 sm:p-8;
+  }
+
+  .status-badge {
+    @apply inline-flex items-center gap-1.5 whitespace-nowrap border-2 border-ink px-2.5 py-1.5 text-[10px] font-black uppercase tracking-wider;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button {
+    transition: none;
+  }
+}
