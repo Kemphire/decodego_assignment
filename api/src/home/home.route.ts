@@ -49,4 +49,13 @@ app.post(
   },
 )
 
+app.get('/homes', async (c) => {
+  const { results: homes } = await c.env.DB.prepare('SELECT id, name FROM homes').all<{
+    id: string
+    name: string
+  }>()
+
+  return c.json(homes, 200)
+})
+
 export default app

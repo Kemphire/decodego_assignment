@@ -176,3 +176,81 @@ export async function payShare(
 
   return updatedShare
 }
+
+export async function getBills(db: D1Database, homeId: string) {
+  const home = await db.prepare('SELECT id FROM homes WHERE id = ?').bind(homeId).first()
+  if (!home) throw new NotFoundError('Home not found')
+
+  const { results } = await db
+    .prepare(`
+        SELECT 
+          b.id,
+          b.homeId,
+          b.title,
+          b.amount as totalCents,
+          s.id as shareId,
+          m.name as memberName,
+          m.id as memberId,
+          s.amount as amountCents,
+          s.paidAt
+        FROM bills AS b
+        LEFT JOIN shares AS s ON s.billId = b.id
+        LEFT JOIN members AS m ON m.id = s.memberId
+        WHERE b.homeId = ? 
+        ORDER BY b.createdAt ASC, b.id, s.id
+    `)
+    .bind(homeId)
+    .all<{
+      id: string
+      homeId: string
+      title: string
+      totalCents: number
+      shareId: string
+      memberName: string
+      memberId: string
+      amountCents: number
+      paidAt: number | null
+    }>()
+
+  const billsById = new Map<
+    string,
+    Omit<Bill, 'amount'> & {
+      totalCents: number
+      shares: {
+        id: string
+        memberId: string
+        memberName: string
+        amountCents: number
+        paidAt: Date | null
+      }[]
+    }
+  >()
+
+  for (const row of results) {
+    let bill = billsById.get(row.id)
+
+    if (!bill) {
+      bill = {
+        id: row.id,
+        homeId: row.homeId,
+        title: row.title,
+        totalCents: row.totalCents,
+        shares: [],
+      }
+
+      billsById.set(row.id, bill)
+    }
+
+    if (row.shareId) {
+      bill.shares.push({
+        id: row.shareId,
+        memberId: row.memberId,
+        memberName: row.memberName,
+        amountCents: row.amountCents,
+        paidAt: row.paidAt ? new Date(row.paidAt * 1000) : null,
+      })
+    }
+  }
+
+  return { bills: Array.from(billsById.values()) }
+}

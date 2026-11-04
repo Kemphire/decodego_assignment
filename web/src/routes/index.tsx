@@ -1,16 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { Home } from '../components/Home'
 
 export const Route = createFileRoute('/')({
   component: Home,
 })
-
-function Home() {
-  return (
-    <main style={{ padding: 24, fontFamily: 'system-ui, sans-serif' }}>
-      <h1>Bill Splitter — starter</h1>
-      <p>
-        Replace this with the app. See <code>README.md</code> at the repo root.
-      </p>
-    </main>
-  )
-}

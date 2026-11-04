@@ -2,7 +2,7 @@ import { sValidator } from '@hono/standard-validator'
 import { Hono } from 'hono'
 import * as v from 'valibot'
 import { AddBillSchema } from './bill.schema'
-import { addBill, divideBill, getOutStandingBalances, payShare } from './bill.service'
+import { addBill, divideBill, getBills, getOutStandingBalances, payShare } from './bill.service'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -111,6 +111,27 @@ app.get(
       },
       200,
     )
+  },
+)
+
+app.get(
+  '/homes/:homeId/bills',
+  sValidator(
+    'param',
+    v.object({
+      homeId: v.pipe(v.string(), v.nonEmpty()),
+    }),
+    (result, c) => {
+      if (!result.success) {
+        return c.json({ error: 'homeId cannot empty' }, 422)
+      }
+    },
+  ),
+  async (c) => {
+    const { homeId } = c.req.valid('param')
+    const { bills } = await getBills(c.env.DB, homeId)
+
+    return c.json({ bills }, 200)
   },
 )
 
