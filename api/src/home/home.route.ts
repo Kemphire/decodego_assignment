@@ -1,5 +1,5 @@
-import { Hono } from 'hono'
 import { sValidator } from '@hono/standard-validator'
+import { Hono } from 'hono'
 import * as v from 'valibot'
 import { AddEntitySchema } from './home.schema'
 import { createHome, createMember } from './home.service'
@@ -26,11 +26,11 @@ app.post(
   sValidator(
     'param',
     v.object({
-      homeId: v.pipe(v.string(), v.toNumber(), v.safeInteger(), v.minValue(1)),
+      homeId: v.pipe(v.string(), v.nonEmpty()),
     }),
     (result, c) => {
       if (!result.success) {
-        return c.json({ error: 'homeId must be a number' }, 422)
+        return c.json({ error: 'homeId cannot be empty' }, 422)
       }
     },
   ),

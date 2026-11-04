@@ -1,5 +1,5 @@
-import { Hono } from 'hono'
 import { sValidator } from '@hono/standard-validator'
+import { Hono } from 'hono'
 import * as v from 'valibot'
 import { AddBillSchema } from './bill.schema'
 import { addBill, divideBill, getOutStandingBalances, payShare } from './bill.service'
@@ -11,11 +11,11 @@ app.post(
   sValidator(
     'param',
     v.object({
-      homeId: v.pipe(v.string(), v.toNumber(), v.safeInteger(), v.minValue(1)),
+      homeId: v.pipe(v.string(), v.nonEmpty()),
     }),
     (result, c) => {
       if (!result.success) {
-        return c.json({ error: 'homeId is not valid number or home not found' }, 404)
+        return c.json({ error: 'homeId cannot be empty' }, 422)
       }
     },
   ),
@@ -55,19 +55,19 @@ app.post(
     }),
     (result, c) => {
       if (!result.success) {
-        return c.json({ error: 'Idempotency-Key must be string of length 0 to 255' }, 422)
+        return c.json({ error: 'Idempotency-Key must be string of length 0 to 255' }, 400)
       }
     },
   ),
   sValidator(
     'param',
     v.object({
-      billId: v.pipe(v.string(), v.toNumber(), v.safeInteger(), v.minValue(1)),
-      shareId: v.pipe(v.string(), v.toNumber(), v.safeInteger(), v.minValue(1)),
+      billId: v.pipe(v.string(), v.nonEmpty()),
+      shareId: v.pipe(v.string(), v.nonEmpty()),
     }),
     (result, c) => {
       if (!result.success) {
-        return c.json({ error: 'homeId or shareId is not number or homeId or shareId not found' }, 404)
+        return c.json({ error: 'homeId or shareId cannot be empty' }, 422)
       }
     },
   ),
@@ -94,11 +94,11 @@ app.get(
   sValidator(
     'param',
     v.object({
-      homeId: v.pipe(v.string(), v.toNumber(), v.safeInteger(), v.minValue(1)),
+      homeId: v.pipe(v.string(), v.nonEmpty()),
     }),
     (result, c) => {
       if (!result.success) {
-        return c.json({ error: 'homeId must be a number and home must exists' }, 404)
+        return c.json({ error: 'homeId cannot empty' }, 422)
       }
     },
   ),

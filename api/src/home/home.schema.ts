@@ -1,7 +1,7 @@
-import * as v from "valibot"
+import * as v from 'valibot'
 
 export const AddEntitySchema = v.object({
-    name: v.string()
+  name: v.string(),
 })
 
-export type AddEntityData = v.InferInput<typeof AddEntitySchema> 
+export type AddEntityData = v.InferInput<typeof AddEntitySchema>

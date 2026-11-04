@@ -1,30 +1,31 @@
+import { randomUUID } from 'node:crypto'
 import { ConflictError, DatabaseError, HomeNoMember, NotFoundError } from '../exceptions'
 import type { AddBillData } from './bill.schema'
 
 interface Bill {
-  id: number
+  id: string
   title: string
-  homeId: number
+  homeId: string
   amount: number
 }
 
 interface Member {
-  id: number
-  homeId: number
+  id: string
+  homeId: string
   name: string
   createdAt: number
 }
 
 interface Share {
-  id: number
-  memberId: number
-  billId: number
+  id: string
+  memberId: string
+  billId: string
   amount: number
   paidAt: number | null
   paymentKey: string | null
 }
 
-export async function addBill(db: D1Database, data: AddBillData, homeId: number) {
+export async function addBill(db: D1Database, data: AddBillData, homeId: string) {
   try {
     const home = await db.prepare('SELECT id FROM homes WHERE id = ?').bind(homeId).first()
     if (!home) throw new NotFoundError('Home not found')
@@ -40,9 +41,9 @@ export async function addBill(db: D1Database, data: AddBillData, homeId: number)
 
     const created = await db
       .prepare(
-        'INSERT INTO bills (title, homeId, amount) VALUES (?,?,?) RETURNING id, title, homeId, amount',
+        'INSERT INTO bills (title, homeId, amount, id) VALUES (?,?,?,?) RETURNING id, title, homeId, amount',
       )
-      .bind(data.title, homeId, data.totalCents)
+      .bind(data.title, homeId, data.totalCents, randomUUID())
       .first<Bill>()
 
     if (!created) {
@@ -93,9 +94,9 @@ async function createShares(db: D1Database, members: Member[], bill: Bill, amoun
     stmts.push(
       db
         .prepare(
-          'INSERT INTO shares (memberId, billId, amount) VALUES (?,?,?) RETURNING id, billId, amount, memberId, paidAt',
+          'INSERT INTO shares (memberId, billId, amount,id) VALUES (?,?,?,?) RETURNING id, billId, amount, memberId, paidAt',
         )
-        .bind(mem.id, bill.id, amount),
+        .bind(mem.id, bill.id, amount, randomUUID()),
     )
   }
 
@@ -117,7 +118,7 @@ async function updateShares(db: D1Database, shares: Share[], incrementAmount: nu
   return shares
 }
 
-export async function getOutStandingBalances(db: D1Database, homeId: number) {
+export async function getOutStandingBalances(db: D1Database, homeId: string) {
   const homeExists = await db
     .prepare('SELECT id FROM homes WHERE id = ?')
     .bind(homeId)
@@ -129,23 +130,23 @@ export async function getOutStandingBalances(db: D1Database, homeId: number) {
 
   const { results } = await db
     .prepare(`
-    SELECT m.id, m.name, SUM(s.amount) as outstandingCents
+    SELECT m.id as memberId, m.name, COALESCE(SUM(s.amount),0) as outstandingCents
     FROM members as m
-    JOIN shares AS s ON s.memberId = m.id
-    WHERE m.homeId = ? AND s.paidAt IS NULL
+    LEFT JOIN shares AS s ON s.memberId = m.id AND s.paidAt is NULL
+    WHERE m.homeId = ?
     GROUP BY s.memberId
-    ORDER BY m.createdAt ASC
+    ORDER BY m.createdAt ASC, m.rowid ASC
     `)
     .bind(homeId)
-    .all<{ name: string; outStandingCents: number }>()
+    .all<{ memberId: string; name: string; outStandingCents: number }>()
 
   return results
 }
 
 export async function payShare(
   db: D1Database,
-  shareId: number,
-  billId: number,
+  shareId: string,
+  billId: string,
   paymentKey: string,
 ) {
   const share = await db
@@ -167,7 +168,7 @@ export async function payShare(
       UPDATE shares
       SET paidAt = unixepoch(),
           paymentKey = ?
-      WHERE id = ? AND billId = ?
+      WHERE id = ? AND billId = ? AND paymentKey is NULL
       RETURNING id, billId, paidAt, memberId, amount
       `)
     .bind(paymentKey, shareId, billId)
