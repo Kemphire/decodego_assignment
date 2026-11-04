@@ -1,0 +1,1 @@
+ALTER TABLE shares ADD COLUMN paymentKey TEXT;

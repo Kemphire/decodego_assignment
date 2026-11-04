@@ -1,4 +1,4 @@
-import { DatabaseError, HomeNoMember, NotFoundError } from '../exceptions'
+import { ConflictError, DatabaseError, HomeNoMember, NotFoundError } from '../exceptions'
 import type { AddBillData } from './bill.schema'
 
 interface Bill {
@@ -21,10 +21,14 @@ interface Share {
   billId: number
   amount: number
   paidAt: number | null
+  paymentKey: string | null
 }
 
 export async function addBill(db: D1Database, data: AddBillData, homeId: number) {
   try {
+    const home = await db.prepare('SELECT id FROM homes WHERE id = ?').bind(homeId).first()
+    if (!home) throw new NotFoundError('Home not found')
+
     const hasMembers = await db
       .prepare('SELECT id FROM members WHERE homeId = ?')
       .bind(homeId)
@@ -75,7 +79,7 @@ export async function divideBill(db: D1Database, bill: Bill, totalCents: number)
   } else {
     const amtPerShare = Math.trunc(totalCents / members.length)
     const shares = await createShares(db, members, bill, amtPerShare)
-    const updatedShares = await updateShares(db, shares.splice(0, residual), 1)
+    const updatedShares = await updateShares(db, shares.slice(0, residual), 1)
 
     shares.splice(0, residual, ...updatedShares)
     return shares
@@ -130,9 +134,44 @@ export async function getOutStandingBalances(db: D1Database, homeId: number) {
     JOIN shares AS s ON s.memberId = m.id
     WHERE m.homeId = ? AND s.paidAt IS NULL
     GROUP BY s.memberId
+    ORDER BY m.createdAt ASC
     `)
     .bind(homeId)
     .all<{ name: string; outStandingCents: number }>()
 
   return results
+}
+
+export async function payShare(
+  db: D1Database,
+  shareId: number,
+  billId: number,
+  paymentKey: string,
+) {
+  const share = await db
+    .prepare(`
+      SELECT id, memberId, paidAt, amount, paymentKey FROM shares WHERE id = ? AND billId = ?
+      `)
+    .bind(shareId, billId)
+    .first<Share>()
+
+  if (!share) throw new NotFoundError('Share or Bill Not Found')
+
+  if (share.paymentKey && share.paymentKey !== paymentKey)
+    throw new ConflictError('Share Already Paid with a different Key')
+
+  if (share.paymentKey === paymentKey) return share
+
+  const updatedShare = (await db
+    .prepare(`
+      UPDATE shares
+      SET paidAt = unixepoch(),
+          paymentKey = ?
+      WHERE id = ? AND billId = ?
+      RETURNING id, billId, paidAt, memberId, amount
+      `)
+    .bind(paymentKey, shareId, billId)
+    .first<Share>()) as Share
+
+  return updatedShare
 }

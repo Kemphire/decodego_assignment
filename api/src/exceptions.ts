@@ -27,7 +27,7 @@ export class NotFoundError extends AppError {
 
 export class HomeNoMember extends AppError {
   constructor(message = "Home has no ember") {
-    super(message, 404);
+    super(message, 422);
   }
 }
 
